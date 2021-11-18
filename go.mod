@@ -1,3 +1,3 @@
-module github.com/lawl/pulseaudio
+module github.com/pr11t/pulseaudio
 
 go 1.14
