@@ -127,3 +127,13 @@ func (c *Client) SetDefaultSink(sinkName string) error {
 		stringTag, []byte(sinkName), byte(0))
 	return err
 }
+
+func (c *Client) SetSinkPort(sinkName, portName string) error {
+	_, err := c.request(commandSetSinkPort,
+		uint32Tag, uint32(0xffffffff),
+		stringTag, []byte(sinkName),
+		byte(0),
+		stringTag, []byte(portName),
+		byte(0))
+	return err
+}
