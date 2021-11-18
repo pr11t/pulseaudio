@@ -137,3 +137,85 @@ func (c *Client) SetSinkPort(sinkName, portName string) error {
 		byte(0))
 	return err
 }
+
+type SinkInput struct {
+	Index          uint32
+	Name           string
+	OwnerModule    uint32
+	Client         uint32
+	Sink           uint32
+	SampleSpec     sampleSpec
+	ChannelMap     channelMap
+	Cvolume        cvolume
+	BufferUsec     uint64
+	SinkUsec       uint64
+	ResampleMethod string
+	Driver         string
+	Mute           bool
+	PropList       map[string]string
+	Corked         bool
+	HasVolume      bool
+	VolumeWritable bool
+	Formats        []formatInfo
+}
+
+func (s *SinkInput) ReadFrom(r io.Reader) (int64, error) {
+	err := bread(r,
+		uint32Tag, &s.Index,
+		stringTag, &s.Name,
+		uint32Tag, &s.OwnerModule,
+		uint32Tag, &s.Client,
+		uint32Tag, &s.Sink,
+		&s.SampleSpec,
+		&s.ChannelMap,
+		&s.Cvolume,
+		usecTag, &s.BufferUsec,
+		usecTag, &s.SinkUsec,
+		stringTag, &s.ResampleMethod,
+		stringTag, &s.Driver,
+		&s.Mute,
+		&s.PropList,
+		&s.Corked,
+		&s.HasVolume,
+		&s.VolumeWritable)
+	if err != nil {
+		return 0, err
+	}
+	fi := formatInfo{}
+
+	var formatCount uint8
+	err = bread(r, formatInfoTag,
+		uint8Tag, &formatCount)
+	if err != nil {
+		return 0, err
+	}
+
+	err = bread(r, &fi.PropList)
+	return 0, nil
+}
+
+func (c *Client) SinkInputs() ([]SinkInput, error) {
+	b, err := c.request(commandGetSinkInputInfoList)
+	if err != nil {
+		return nil, err
+	}
+	var sinkInputs []SinkInput
+	for b.Len() > 0 {
+		var sinkInputInfo SinkInput
+		err = bread(b, &sinkInputInfo)
+		if err != nil {
+			return nil, err
+		}
+		sinkInputs = append(sinkInputs, sinkInputInfo)
+	}
+	return sinkInputs, nil
+}
+
+func (c *Client) MoveSinkInput(inputIndex uint32, sinkName string) error {
+	_, err := c.request(commandMoveSinkInput,
+		uint32Tag, uint32(inputIndex),
+		uint32Tag, uint32(0xffffffff),
+		stringTag, []byte(sinkName),
+		byte(0))
+	return err
+}
